@@ -1,5 +1,6 @@
 import { asyncHandler } from '../../config/asyncHandler';
 import { Request, Response } from 'express';
+import { logger } from '../../utils/logger';
 
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json({ message: 'User registered  successfully!' });
@@ -10,5 +11,6 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  logger.info('hello world');
   res.status(200).json({ message: 'hello brother' });
 });
