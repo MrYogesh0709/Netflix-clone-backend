@@ -9,7 +9,7 @@ const server = express();
 server.use(express.json());
 server.use(expressLogger);
 
-server.use('/api/v1/', userRouter);
+server.use('/api/v1/auth', userRouter);
 
 server.use(notFound);
 server.use(errorLogger);

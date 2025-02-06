@@ -16,8 +16,8 @@ export const errorHandler: ErrorRequestHandler = (
       data: err.data,
       stack: isDevelopment ? err.stack : undefined,
     });
+    return;
   }
-
   res.status(500).json({
     success: false,
     message: 'Internal Server Error',

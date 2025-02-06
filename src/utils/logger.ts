@@ -12,11 +12,11 @@ const logFormat = winston.format.combine(
 
 // Create logger instance
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: 'info',
   format: logFormat,
   defaultMeta: { service: 'NETFLIX-CLONE' },
   transports: [
-    ...(isDevelopment
+    ...(false //TODO CHANGE IT
       ? [
           new winston.transports.Console({
             format: winston.format.combine(winston.format.colorize(), winston.format.prettyPrint()),

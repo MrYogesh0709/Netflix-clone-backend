@@ -1,27 +1,35 @@
+import { Request, Response, NextFunction } from 'express';
+import { AuthService } from '../../services/AuthService';
 import { asyncHandler } from '../../config/asyncHandler';
-import { Request, Response } from 'express';
-import { logger } from '../../utils/logger';
-import { UserInput } from '../validators/user.schema';
-import User from '../../models/User.model';
-import { ApiError } from '../../errors/ApiErrors';
 
-export const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  const userData: UserInput = req.body;
+export class AuthController {
+  private authService: AuthService;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: userData.email });
-  if (existingUser) {
-    throw new ApiError(400, 'Email already in use');
+  constructor() {
+    this.authService = new AuthService();
   }
 
-  const newUser = await User.create(userData);
-  res.status(201).json({ success: true, message: 'User registered successfully', data: newUser });
-});
+  register = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const data = req.body;
+    const result = await this.authService.register(data);
+    res.status(201).json(result);
+  });
 
-export const loginUser = asyncHandler(async (req: Request, res: Response) => {
-  res.status(200).json({ message: 'User login successfully!' });
-});
+  login = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const data = req.body;
+    const result = await this.authService.login(data);
+    res.status(200).json(result);
+  });
 
-export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
-  res.status(200).json({ message: 'hello brother' });
-});
+  refresh = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { refreshToken } = req.body;
+    const result = await this.authService.refreshToken(refreshToken);
+    res.status(200).json(result);
+  });
+
+  logout = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const userId = req.user?.id;
+    await this.authService.logout(userId);
+    res.status(200).json({ message: 'Logged out successfully' });
+  });
+}
