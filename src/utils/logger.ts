@@ -1,9 +1,8 @@
 import winston from 'winston';
 import expressWinston from 'express-winston';
 import path from 'path';
-import { env } from '../config/env';
+import { constants, isDevelopment } from './constant';
 
-const isDevelopment = env.NODE_ENV !== 'production';
 // Custom log format
 const logFormat = winston.format.combine(
   winston.format.timestamp(),
@@ -27,13 +26,13 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: path.resolve('logs', 'error.log'),
       level: 'error',
-      maxsize: 5242880, //5mb
-      maxFiles: 5,
+      maxsize: constants.MAX_LOG_FILE_SIZE_MB,
+      maxFiles: constants.MAX_LOG_FILE,
     }),
     new winston.transports.File({
       filename: path.resolve('logs', 'combined.log'),
-      maxsize: 5242880,
-      maxFiles: 5,
+      maxsize: constants.MAX_LOG_FILE_SIZE_MB,
+      maxFiles: constants.MAX_LOG_FILE,
     }),
   ],
 });

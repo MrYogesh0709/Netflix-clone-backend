@@ -1,6 +1,8 @@
 import express from 'express';
 import userRouter from './api/routes/user.routes';
 import { errorLogger, expressLogger } from './utils/logger';
+import { errorHandler } from './errors/ErrorHandler';
+import { notFound } from './errors/notFound';
 
 const server = express();
 
@@ -9,10 +11,8 @@ server.use(expressLogger);
 
 server.use('/api/v1/', userRouter);
 
+server.use(notFound);
 server.use(errorLogger);
-
-server.use((req, res) => {
-  res.status(404).json({ msg: 'Route does not exists' });
-});
+server.use(errorHandler);
 
 export default server;
