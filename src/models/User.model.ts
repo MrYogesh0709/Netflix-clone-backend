@@ -1,11 +1,5 @@
-import { Schema, model, Document } from 'mongoose';
-
-export interface UserType extends Document {
-  username: string;
-  email: string;
-  password: string;
-  refreshToken?: string;
-}
+import { Schema, model } from 'mongoose';
+import { UserType } from '../types/auth.types';
 
 const UserSchema = new Schema<UserType>(
   {

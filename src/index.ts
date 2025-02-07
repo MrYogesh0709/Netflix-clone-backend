@@ -1,5 +1,5 @@
 import connectToMongoDB from './config/db';
-import { env } from './config/env';
+import { env } from './utils/env';
 import server from './server';
 
 const PORT = env.PORT || 3000;
