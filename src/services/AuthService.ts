@@ -1,23 +1,27 @@
 import jwt from 'jsonwebtoken';
 import { comparePassword, hashPassword } from '../utils/password.util';
-import { AuthResponse, AuthRequest } from '../types/auth.types';
+import { AuthResponse, AuthRequest, UserType } from '../types/auth.types';
 import { constants } from '../utils/constant';
-import User, { UserType } from '../models/User.model';
+import User from '../models/User.model';
 import { ApiError } from '../errors/ApiErrors';
+import { JwtPayload } from '../types/express';
 
 export class AuthService {
   private generateTokens(user: UserType): { accessToken: string; refreshToken: string } {
-    const payload = { id: user._id, email: user.email };
     const secret = constants.jwt.secret;
+
+    const payload: JwtPayload = { userId: user._id.toString(), email: user.email };
+    const refreshTokenPayload: JwtPayload = { userId: user._id.toString() };
 
     const accessTokenOptions = { expiresIn: constants.jwt.expiresIn };
     const refreshTokenOptions = { expiresIn: constants.jwt.refreshExpiresIn };
 
     const accessToken = jwt.sign(payload, secret, accessTokenOptions);
-    const refreshToken = jwt.sign({ id: user._id }, secret, refreshTokenOptions);
+    const refreshToken = jwt.sign(refreshTokenPayload, secret, refreshTokenOptions);
 
     return { accessToken, refreshToken };
   }
+
   async register(data: AuthRequest): Promise<AuthResponse> {
     const existingUser = await User.findOne({
       $or: [{ email: data.email }, { username: data.username }],
@@ -35,7 +39,7 @@ export class AuthService {
 
     const { accessToken, refreshToken } = this.generateTokens(newUser);
     newUser.refreshToken = refreshToken;
-    newUser.save();
+    await newUser.save();
 
     return {
       accessToken,
@@ -67,8 +71,8 @@ export class AuthService {
   }
 
   async refreshToken(token: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const decoded = jwt.verify(token, constants.jwt.secret) as { id: string };
-    const user = await User.findOne({ _id: decoded.id, refreshToken: token });
+    const decoded = jwt.verify(token, constants.jwt.secret) as JwtPayload;
+    const user = await User.findOne({ _id: decoded.userId, refreshToken: token });
 
     if (!user) {
       throw new Error('Invalid refresh token');

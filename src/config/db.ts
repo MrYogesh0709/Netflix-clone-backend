@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { env } from './env';
+import { env } from '../utils/env';
 
 export default async function connectToMongoDB() {
   try {
