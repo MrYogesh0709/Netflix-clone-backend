@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { constants } from '../../utils/constant';
-import { JwtPayload } from '../../types/express';
+import { CustomJwtPayload } from '../../types/auth.types';
+
+declare module 'express' {
+  export interface Request {
+    user?: CustomJwtPayload;
+  }
+}
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -12,7 +18,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const decoded = jwt.verify(token, constants.jwt.secret) as JwtPayload;
+    const decoded = jwt.verify(token, constants.jwt.secret) as CustomJwtPayload;
     req.user = decoded;
     next();
   } catch (error) {

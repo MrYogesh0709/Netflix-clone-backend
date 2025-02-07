@@ -1,17 +1,16 @@
 import jwt from 'jsonwebtoken';
 import { comparePassword, hashPassword } from '../utils/password.util';
-import { AuthResponse, AuthRequest, UserType } from '../types/auth.types';
+import { AuthResponse, AuthRequest, UserType, CustomJwtPayload } from '../types/auth.types';
 import { constants } from '../utils/constant';
 import User from '../models/User.model';
 import { ApiError } from '../errors/ApiErrors';
-import { JwtPayload } from '../types/express';
 
 export class AuthService {
   private generateTokens(user: UserType): { accessToken: string; refreshToken: string } {
     const secret = constants.jwt.secret;
 
-    const payload: JwtPayload = { userId: user._id.toString(), email: user.email };
-    const refreshTokenPayload: JwtPayload = { userId: user._id.toString() };
+    const payload: CustomJwtPayload = { userId: user._id.toString(), email: user.email };
+    const refreshTokenPayload: CustomJwtPayload = { userId: user._id.toString() };
 
     const accessTokenOptions = { expiresIn: constants.jwt.expiresIn };
     const refreshTokenOptions = { expiresIn: constants.jwt.refreshExpiresIn };
@@ -71,13 +70,12 @@ export class AuthService {
   }
 
   async refreshToken(token: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const decoded = jwt.verify(token, constants.jwt.secret) as JwtPayload;
+    const decoded = jwt.verify(token, constants.jwt.secret) as CustomJwtPayload;
     const user = await User.findOne({ _id: decoded.userId, refreshToken: token });
 
     if (!user) {
       throw new Error('Invalid refresh token');
     }
-
     const { accessToken, refreshToken } = this.generateTokens(user);
     user.refreshToken = refreshToken;
     await user.save();
