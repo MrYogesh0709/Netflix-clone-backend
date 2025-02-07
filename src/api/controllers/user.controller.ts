@@ -52,7 +52,6 @@ export class AuthController {
   logout = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const id = req.user.userId;
     await this.authService.logout(id);
-
     res.clearCookie('accessToken', { httpOnly: true, secure: !isDevelopment, sameSite: 'strict' });
     res.clearCookie('refreshToken', { httpOnly: true, secure: !isDevelopment, sameSite: 'strict' });
 
