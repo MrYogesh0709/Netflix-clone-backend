@@ -23,29 +23,29 @@ export class AuthController {
 
   register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const data = req.body;
-    const result = await this.authService.register(data);
+    const { user, refreshToken, accessToken } = await this.authService.register(data);
 
-    this.setTokenCookie(res, 'accessToken', result.accessToken, constants.jwt.expiresIn);
-    this.setTokenCookie(res, 'refreshToken', result.refreshToken, constants.jwt.refreshExpiresIn);
+    this.setTokenCookie(res, 'accessToken', accessToken, constants.jwt.expiresIn);
+    this.setTokenCookie(res, 'refreshToken', refreshToken, constants.jwt.refreshExpiresIn);
 
-    res.status(201).json(new ApiResponse(201, result.user, 'User register successfully'));
+    res.status(201).json(new ApiResponse(201, user, 'User register successfully'));
   });
 
   login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const data = req.body;
-    const result = await this.authService.login(data);
+    const { profiles, user, accessToken, refreshToken } = await this.authService.login(data);
 
-    this.setTokenCookie(res, 'accessToken', result.accessToken, constants.jwt.expiresIn);
-    this.setTokenCookie(res, 'refreshToken', result.refreshToken, constants.jwt.refreshExpiresIn);
-    res.status(200).json(new ApiResponse(200, result.user, 'User logged In'));
+    this.setTokenCookie(res, 'accessToken', accessToken, constants.jwt.expiresIn);
+    this.setTokenCookie(res, 'refreshToken', refreshToken, constants.jwt.refreshExpiresIn);
+    res.status(200).json(new ApiResponse(200, { profiles, user }, 'User logged In'));
   });
 
   refresh = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const refreshToken = req.signedCookies.refreshToken;
-    const result = await this.authService.refreshToken(refreshToken);
+    const token = req.signedCookies.refreshToken;
+    const { accessToken, refreshToken } = await this.authService.refreshToken(token);
 
-    this.setTokenCookie(res, 'accessToken', result.accessToken, constants.jwt.expiresIn);
-    this.setTokenCookie(res, 'refreshToken', result.refreshToken, constants.jwt.refreshExpiresIn);
+    this.setTokenCookie(res, 'accessToken', accessToken, constants.jwt.expiresIn);
+    this.setTokenCookie(res, 'refreshToken', refreshToken, constants.jwt.refreshExpiresIn);
     res.status(200).json(new ApiResponse(200, {}, 'Token Refresh success'));
   });
 

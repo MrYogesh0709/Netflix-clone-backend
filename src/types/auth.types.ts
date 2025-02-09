@@ -1,12 +1,12 @@
 import { JwtPayload } from 'jsonwebtoken';
-import { Document, Types } from 'mongoose';
-
-export interface UserType extends Document {
-  _id: Types.ObjectId;
+import { Document, ObjectId } from 'mongoose';
+export interface IUser extends Document {
+  _id: ObjectId;
   username: string;
   email: string;
   password: string;
   refreshToken?: string;
+  profiles: ObjectId[];
 }
 
 export interface CustomJwtPayload extends JwtPayload {
@@ -22,5 +22,6 @@ export interface AuthRequest {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: { id: Types.ObjectId; email: string };
+  user: { id: ObjectId; email: string };
+  profiles?: ObjectId[];
 }

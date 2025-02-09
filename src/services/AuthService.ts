@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { comparePassword, hashPassword } from '../utils/password.util';
-import { AuthResponse, AuthRequest, UserType, CustomJwtPayload } from '../types/auth.types';
+import { AuthResponse, AuthRequest, IUser, CustomJwtPayload } from '../types/auth.types';
 import { constants } from '../utils/constant';
 import User from '../models/User.model';
 import { ApiError } from '../errors/ApiErrors';
 
 export class AuthService {
-  private generateTokens(user: UserType): { accessToken: string; refreshToken: string } {
+  private generateTokens(user: IUser): { accessToken: string; refreshToken: string } {
     const secret = constants.jwt.secret;
 
     const payload: CustomJwtPayload = { userId: user._id.toString(), email: user.email };
@@ -66,6 +66,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       user: { id: user._id, email: user.email },
+      profiles: user.profiles,
     };
   }
 
