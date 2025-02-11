@@ -37,7 +37,7 @@ export class ProfileController {
     const userId = req.user?.userId as string;
 
     if (!Types.ObjectId.isValid(profileId)) {
-      throw new ApiError(400, 'Invalid id format bro');
+      throw new ApiError(400, 'Invalid Id Format');
     }
 
     const result = await ProfileService.updateProfile(profileId, req.body, userId);

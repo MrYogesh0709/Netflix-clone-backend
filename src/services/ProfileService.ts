@@ -90,17 +90,28 @@ export class ProfileService {
   }
 
   static async updateProfile(profileId: string, data: Partial<IProfile>, userId: string) {
-    const result = await Profile.findOneAndUpdate({ _id: profileId, userId }, data, { new: true, runValidators: true });
+    const result = await Profile.findOneAndUpdate(
+      {
+        _id: profileId,
+        userId,
+        ...(data.name && { name: { $ne: data.name } }),
+      },
+      data,
+      { new: true, runValidators: true }
+    );
+
     if (!result) {
-      throw new ApiError(404, 'Profile not found or access denied');
+      throw new ApiError(400, 'Profile not found, access denied, or name already exists');
     }
+
     await Promise.all([
-      redis.setex(this.generateProfileKey(profileId), this.CACHE_TTL, JSON.stringify(result)),
-      this.clearUserProfilesCache(userId),
+      redis.setex(ProfileService.generateProfileKey(profileId), ProfileService.CACHE_TTL, JSON.stringify(result)),
+      ProfileService.clearUserProfilesCache(userId),
     ]);
 
     return result;
   }
+
   static async deleteProfile(profileId: string, userId: string) {
     const result = await Profile.findOneAndDelete({
       _id: profileId,
