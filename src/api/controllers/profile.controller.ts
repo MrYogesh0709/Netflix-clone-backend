@@ -1,36 +1,53 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../config/asyncHandler';
-import Profile from '../../models/Profile.model';
 import { Types } from 'mongoose';
+import { ProfileService } from '../../services/ProfileService';
+import { ApiResponse } from '../../utils/ApiResponse';
+import { ApiError } from '../../errors/ApiErrors';
+import { logger } from '../../utils/logger';
 
 export class ProfileController {
   createProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const data = req.body;
-    const id = req.user?.userId as string;
-    const result = await Profile.create({ ...data, userId: id });
-    res.status(201).json(result);
+    const userId = req.user?.userId as string;
+    const result = await ProfileService.createProfile({ ...data, userId });
+    logger.info(`profile created : ${userId}`);
+    res.status(201).json(new ApiResponse(201, result, `profile created`));
   });
 
   getProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { profileId } = req.params;
-    if (!Types.ObjectId.isValid(profileId?.toString() as string)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid user ID format',
-        errors: ['User ID must be a valid MongoDB ObjectId'],
-        data: null,
-      });
-      return;
+    const profileId = req.params.profileId ?? '';
+    const userId = req.user?.userId as string;
+
+    if (!Types.ObjectId.isValid(profileId)) {
+      throw new ApiError(400, 'Invalid Id format', ['Profile Id must be valid MongoDB ObjectId']);
     }
-    const result = await Profile.findOne({ _id: profileId });
-    if (!result) {
-      res.status(200).json({ message: 'profile not found' });
-      return;
-    }
-    res.status(200).json(result);
+    const result = await ProfileService.getProfile(profileId, userId);
+    res.status(200).json(new ApiResponse(200, result));
   });
 
-  updateProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {});
+  updateProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const profileId = req.params.profileId ?? '';
+    const userId = req.user?.userId as string;
 
-  deleteProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {});
+    if (!Types.ObjectId.isValid(profileId)) {
+      throw new ApiError(400, 'Invalid id format bro');
+    }
+
+    const result = await ProfileService.updateProfile(profileId, req.body, userId);
+    logger.info(`profile updated :${profileId}`);
+    res.status(200).json(new ApiResponse(200, result));
+  });
+
+  deleteProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const profileId = req.params.profileId ?? '';
+    const userId = req.user?.userId as string;
+
+    if (!Types.ObjectId.isValid(profileId)) {
+      throw new ApiError(400, 'Invalid Id format', ['Profile Id must be valid MongoDB ObjectId']);
+    }
+    const result = await ProfileService.deleteProfile(profileId, userId);
+    logger.info(`profile deleted :${profileId}`);
+    res.status(200).json(new ApiResponse(200, `Profile ${result.name} Deleted`));
+  });
 }

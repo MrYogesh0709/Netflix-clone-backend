@@ -12,6 +12,8 @@ const ProfileSchema = new Schema<IProfile>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
+ProfileSchema.index({ name: 1, userId: 1 }, { unique: true });
+
 const Profile = model<IProfile>('Profile', ProfileSchema);
 
 export default Profile;

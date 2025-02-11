@@ -3,6 +3,8 @@ import { AuthService } from '../../services/AuthService';
 import { asyncHandler } from '../../config/asyncHandler';
 import { constants, isDevelopment } from '../../utils/constant';
 import { ApiResponse } from '../../utils/ApiResponse';
+import { logger } from '../../utils/logger';
+import User from '../../models/User.model';
 
 export class AuthController {
   private authService: AuthService;
@@ -24,9 +26,11 @@ export class AuthController {
   register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const data = req.body;
     const { user, refreshToken, accessToken } = await this.authService.register(data);
-
+    logger.info(`crate user started :${user.id}`);
     this.setTokenCookie(res, 'accessToken', accessToken, constants.jwt.expiresIn);
     this.setTokenCookie(res, 'refreshToken', refreshToken, constants.jwt.refreshExpiresIn);
+
+    logger.info(`User created successfully :${user.id}`);
 
     res.status(201).json(new ApiResponse(201, user, 'User register successfully'));
   });
@@ -37,6 +41,9 @@ export class AuthController {
 
     this.setTokenCookie(res, 'accessToken', accessToken, constants.jwt.expiresIn);
     this.setTokenCookie(res, 'refreshToken', refreshToken, constants.jwt.refreshExpiresIn);
+
+    logger.info(`User logged in:${user.id}`);
+
     res.status(200).json(new ApiResponse(200, { profiles, user }, 'User logged In'));
   });
 
@@ -55,6 +62,7 @@ export class AuthController {
     res.clearCookie('accessToken', { httpOnly: true, secure: !isDevelopment, sameSite: 'strict' });
     res.clearCookie('refreshToken', { httpOnly: true, secure: !isDevelopment, sameSite: 'strict' });
 
+    logger.info(`user logged out:${id}`);
     res.status(200).json(new ApiResponse(200, {}, 'Logged out successfully'));
   });
 }

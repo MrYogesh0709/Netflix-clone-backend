@@ -48,7 +48,7 @@ export class AuthService {
   }
 
   async login(data: AuthRequest): Promise<AuthResponse> {
-    const user = await User.findOne({ email: data.email });
+    const user = await User.findOne({ email: data.email }).populate('profiles');
     if (!user) {
       throw new ApiError(400, 'Invalid credentials');
     }
