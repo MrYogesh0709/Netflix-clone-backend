@@ -26,6 +26,12 @@ export class ProfileController {
     res.status(200).json(new ApiResponse(200, result));
   });
 
+  getUserProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.userId as string;
+    const result = await ProfileService.getUserProfiles(userId);
+    res.status(200).json(new ApiResponse(200, result));
+  });
+
   updateProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const profileId = req.params.profileId ?? '';
     const userId = req.user?.userId as string;

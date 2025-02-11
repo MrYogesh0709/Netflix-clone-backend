@@ -14,6 +14,7 @@ export const constants = {
   bcrypt: {
     saltRounds: 10,
   },
+  MAX_PROFILES: 6,
 };
 
 export const isDevelopment = env.NODE_ENV === constants.ENVIRONMENT_DEVELOPMENT;

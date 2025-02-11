@@ -15,4 +15,5 @@ router
   .patch(authMiddleware, validate(updateProfileValidator), profileController.updateProfile)
   .delete(authMiddleware, profileController.deleteProfile);
 
+router.route('').get(authMiddleware, profileController.getUserProfile);
 export default router;
