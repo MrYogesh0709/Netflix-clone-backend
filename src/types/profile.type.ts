@@ -10,4 +10,5 @@ export interface IProfile extends Document {
     autoplayNext: boolean;
     autoplayPreviews: boolean;
   };
+  admin?: boolean;
 }

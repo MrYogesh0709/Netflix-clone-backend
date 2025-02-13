@@ -7,6 +7,7 @@ export interface IUser extends Document {
   password: string;
   refreshToken?: string;
   profiles: ObjectId[];
+  admin: boolean;
 }
 
 export interface CustomJwtPayload extends JwtPayload {

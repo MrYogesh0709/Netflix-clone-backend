@@ -5,7 +5,6 @@ import { ProfileService } from '../../services/ProfileService';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { ApiError } from '../../errors/ApiErrors';
 import { logger } from '../../utils/logger';
-
 export class ProfileController {
   createProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const data = req.body;

@@ -2,6 +2,7 @@ import { Schema, model } from 'mongoose';
 import { IUser } from '../types/auth.types';
 import { IProfile } from '../types/profile.type';
 import { constants } from '../utils/constant';
+import { boolean } from 'zod';
 
 const UserSchema = new Schema<IUser>(
   {
@@ -9,6 +10,7 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     refreshToken: { type: String },
+    admin: { type: Boolean, default: false },
     profiles: {
       type: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
       validate: [

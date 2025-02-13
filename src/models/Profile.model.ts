@@ -2,7 +2,7 @@ import { model, Schema } from 'mongoose';
 import { IProfile } from '../types/profile.type';
 
 const ProfileSchema = new Schema<IProfile>({
-  name: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
   language: { type: String, default: 'en' },
   preferences: {
     autoplayNext: { type: Boolean, default: true },
