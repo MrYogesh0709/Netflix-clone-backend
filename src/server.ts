@@ -38,7 +38,7 @@ server.get('/movies/:id', async (req, res) => {
       return;
     }
     res.json({
-      ...movie._doc,
+      ...movie.toObject(),
       videoUrl: `${env.VIDEO_BASE_URL}/${movie.videoFolder}/master.m3u8`,
     });
   } catch (error) {
