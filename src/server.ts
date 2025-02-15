@@ -20,7 +20,7 @@ import MovieModel from './models/Movie.model';
 
 const server = express();
 
-server.use(helmet());
+// server.use(helmet());
 server.use(cors());
 server.use(express.json({ limit: constants.JSON_LIMIT }));
 server.use(cookieParser(env.COOKIE_SECRET));
@@ -29,21 +29,6 @@ server.use(generalLimiterMiddleware);
 
 server.use('/api/v1/auth', userRouter);
 server.use('/api/v1/profile', profileRouter);
-server.use(
-  '/videos',
-  (req, res, next) => {
-    next();
-  },
-  express.static(path.join(process.cwd(), 'videos'), {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.m3u8')) {
-        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-      } else if (path.endsWith('.ts')) {
-        res.setHeader('Content-Type', 'video/mp2t');
-      }
-    },
-  })
-);
 
 server.get('/movies/:id', async (req, res) => {
   try {
@@ -54,13 +39,14 @@ server.get('/movies/:id', async (req, res) => {
     }
     res.json({
       ...movie._doc,
-      videoUrl: `http://localhost:3000/videos/${movie.videoFolder}/master.m3u8`,
+      videoUrl: `${env.VIDEO_BASE_URL}/${movie.videoFolder}/master.m3u8`,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 server.use(notFound);
 server.use(errorLogger);
 server.use(errorHandler);

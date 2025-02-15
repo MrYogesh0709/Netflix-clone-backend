@@ -7,7 +7,7 @@ const MoviePage = ({ movieId }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/movies/${movieId}`)
+    fetch(`http://localhost:3000/movies/${movieId}`, {})
       .then((res) => res.json())
       .then((data) => {
         setMovie(data);

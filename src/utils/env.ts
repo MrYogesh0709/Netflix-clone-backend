@@ -4,4 +4,5 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV,
   JWT_SECRET: process.env.JWT_SECRET,
   COOKIE_SECRET: process.env.COOKIE_SECRET,
+  VIDEO_BASE_URL: process.env.VIDEO_BASE_URL,
 };
