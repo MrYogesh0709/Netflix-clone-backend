@@ -7,6 +7,7 @@ import { errorHandler } from './errors/ErrorHandler';
 import { notFound } from './errors/notFound';
 import { constants } from './utils/constant';
 import path from 'path';
+import fs from 'fs';
 //security
 import helmet from 'helmet';
 
@@ -20,7 +21,7 @@ import MovieModel from './models/Movie.model';
 
 const server = express();
 
-// server.use(helmet());
+server.use(helmet());
 server.use(cors());
 server.use(express.json({ limit: constants.JSON_LIMIT }));
 server.use(cookieParser(env.COOKIE_SECRET));
@@ -45,6 +46,32 @@ server.get('/movies/:id', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+server.get('/movies/:id/thumbnails', async (req, res) => {
+  const { id } = req.params;
+  const movie = await MovieModel.findById(id);
+  if (!movie) {
+    res.status(404).json({ error: 'Movie not found' });
+    return;
+  }
+  const { second } = req.query;
+  if (!second) {
+    res.status(400).json({ error: 'Second parameter is required' });
+    return;
+  }
+
+  const folderPath = path.join(__dirname, `../videos/${movie.videoFolder}/thumbnails`);
+
+  const thumbnailFile = `thumbnail_${String(second).padStart(3, '0')}.png`;
+
+  const filePath = path.join(folderPath, thumbnailFile);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ error: 'Thumbnail not found' });
+    return;
+  }
+  const thumbnailUrl = `${env.VIDEO_BASE_URL}/${movie.videoFolder}/thumbnails/${thumbnailFile}`;
+  res.json({ thumbnailUrl });
 });
 
 server.use(notFound);

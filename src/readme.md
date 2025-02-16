@@ -121,3 +121,6 @@ videos/
 ---
 
 ## 🎉 All Set! Deploy these files to a server or CDN to stream your video using HLS.
+
+There is also dash =>Dynamic Adaptive Streaming over HTTP
+hls is great for ios devices other than that dash is used
