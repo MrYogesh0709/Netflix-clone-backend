@@ -8,9 +8,9 @@ import { notFound } from './errors/notFound';
 import { constants } from './utils/constant';
 import path from 'path';
 import fs from 'fs';
-//security
 import helmet from 'helmet';
-
+import Stripe from 'stripe';
+const stripe = new Stripe(env.STRIPE_SECRET_KEY as string);
 //middleware
 import { generalLimiterMiddleware } from './api/middleware/rateLimiterMiddleware';
 
@@ -18,6 +18,9 @@ import { generalLimiterMiddleware } from './api/middleware/rateLimiterMiddleware
 import userRouter from './api/routes/user.routes';
 import profileRouter from './api/routes/profile.routes';
 import MovieModel from './models/Movie.model';
+import Plan from './models/Plan.model';
+import { Payment } from './models/Payment.model';
+import Subscription from './models/Subscription.model';
 
 const server = express();
 
@@ -72,6 +75,80 @@ server.get('/movies/:id/thumbnails', async (req, res) => {
   }
   const thumbnailUrl = `${env.VIDEO_BASE_URL}/${movie.videoFolder}/thumbnails/${thumbnailFile}`;
   res.json({ thumbnailUrl });
+});
+
+server.post('/create-checkout-session', async (req, res) => {
+  // const { planId, customerEmail } = req.body;
+  const planId = '67b3473095dc70c7c1bf76a2';
+  const userId = '67b3494550775796d047c392';
+  const customerEmail = 'yogeshvanzara98@gmail.com';
+
+  try {
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      res.status(404).send('Plan not found');
+      return;
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: customerEmail,
+      line_items: [
+        {
+          price: plan.stripePriceId, // stored in your Plan model
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        user_id: userId,
+        plan_id: planId,
+      },
+      billing_address_collection: 'required',
+      success_url: `${process.env.CLIENT_URL}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/subscription-cancel`,
+    });
+    console.log('session');
+    console.log(session);
+    res.json({ sessionId: session.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+server.get('/retrieve-subscription', async (req, res) => {
+  const { sessionId } = req.query;
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    const newSubscription = new Subscription({
+      userId: session.metadata.user_id,
+      planId: session.metadata.plan_id,
+      status: subscription.status,
+      startDate: new Date(subscription.current_period_start * 1000),
+      nextBillingDate: new Date(subscription.current_period_end * 1000),
+      paymentMethod: session.payment_method_types[0],
+      stripeSubscriptionId: subscription.id,
+    });
+    await newSubscription.save();
+
+    const payment = new Payment({
+      userId: session.metadata.user_id,
+      amount: session.amount_total / 100,
+      currency: session.currency,
+      paymentMethod: session.payment_method_types[0],
+      transactionStatus: session.payment_status,
+      transactionId: session.id,
+      subscription: newSubscription._id,
+    });
+    await payment.save();
+
+    res.json({ subscription: newSubscription, payment });
+  } catch (error) {
+    res.status(500).send('Failed to retrieve subscription');
+  }
 });
 
 server.use(notFound);

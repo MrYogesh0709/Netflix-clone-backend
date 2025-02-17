@@ -2,7 +2,6 @@ import { Schema, model } from 'mongoose';
 import { IUser } from '../types/auth.types';
 import { IProfile } from '../types/profile.type';
 import { constants } from '../utils/constant';
-import { boolean } from 'zod';
 
 const UserSchema = new Schema<IUser>(
   {

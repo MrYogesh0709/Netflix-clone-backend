@@ -17,4 +17,47 @@ export const constants = {
   MAX_PROFILES: 6,
 };
 
+export const plans = [
+  {
+    name: 'mobile',
+    videoQuality: 'Fair',
+    resolution: '480p',
+    spatialAudio: false,
+    supportedDevices: ['Mobile phone', 'Tablet'],
+    maxScreens: 1,
+    downloadDevices: 1,
+    price: 149,
+  },
+  {
+    name: 'basic',
+    videoQuality: 'Good',
+    resolution: '720p (HD)',
+    spatialAudio: false,
+    supportedDevices: ['TV', 'Computer', 'Mobile phone', 'Tablet'],
+    maxScreens: 1,
+    downloadDevices: 1,
+    price: 199,
+  },
+  {
+    name: 'standard',
+    videoQuality: 'Great',
+    resolution: '1080p (Full HD)',
+    spatialAudio: false,
+    supportedDevices: ['TV', 'Computer', 'Mobile phone', 'Tablet'],
+    maxScreens: 2,
+    downloadDevices: 2,
+    price: 499,
+  },
+  {
+    name: 'premium',
+    videoQuality: 'Best',
+    resolution: '4K (Ultra HD) + HDR',
+    spatialAudio: true,
+    supportedDevices: ['TV', 'Computer', 'Mobile phone', 'Tablet'],
+    maxScreens: 4,
+    downloadDevices: 6,
+    price: 649,
+  },
+];
+
 export const isDevelopment = env.NODE_ENV === constants.ENVIRONMENT_DEVELOPMENT;
