@@ -78,11 +78,8 @@ server.get('/movies/:id/thumbnails', async (req, res) => {
 });
 
 server.post('/create-checkout-session', async (req, res) => {
-  // const { planId, customerEmail } = req.body;
-  const planId = '67b3473095dc70c7c1bf76a2';
+  const { planId, customerEmail } = req.body;
   const userId = '67b3494550775796d047c392';
-  const customerEmail = 'yogeshvanzara98@gmail.com';
-
   try {
     const plan = await Plan.findById(planId);
     if (!plan) {
@@ -94,12 +91,7 @@ server.post('/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       mode: 'subscription',
       customer_email: customerEmail,
-      line_items: [
-        {
-          price: plan.stripePriceId, // stored in your Plan model
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: plan.stripePriceId, quantity: 1 }],
       metadata: {
         user_id: userId,
         plan_id: planId,
@@ -108,46 +100,32 @@ server.post('/create-checkout-session', async (req, res) => {
       success_url: `${process.env.CLIENT_URL}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/subscription-cancel`,
     });
-    console.log('session');
-    console.log(session);
-    res.json({ sessionId: session.id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-server.get('/retrieve-subscription', async (req, res) => {
-  const { sessionId } = req.query;
-
-  try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    const retrievedSession = await stripe.checkout.sessions.retrieve(sessionId);
+    const subscription = await stripe.subscriptions.retrieve(retrievedSession.subscription);
     const newSubscription = new Subscription({
-      userId: session.metadata.user_id,
-      planId: session.metadata.plan_id,
+      userId: retrievedSession.metadata.user_id,
+      planId: retrievedSession.metadata.plan_id,
       status: subscription.status,
       startDate: new Date(subscription.current_period_start * 1000),
       nextBillingDate: new Date(subscription.current_period_end * 1000),
-      paymentMethod: session.payment_method_types[0],
+      paymentMethod: retrievedSession.payment_method_types[0],
       stripeSubscriptionId: subscription.id,
     });
     await newSubscription.save();
-
     const payment = new Payment({
-      userId: session.metadata.user_id,
-      amount: session.amount_total / 100,
-      currency: session.currency,
-      paymentMethod: session.payment_method_types[0],
-      transactionStatus: session.payment_status,
-      transactionId: session.id,
+      userId: retrievedSession.metadata.user_id,
+      amount: retrievedSession.amount_total / 100,
+      currency: retrievedSession.currency,
+      paymentMethod: retrievedSession.payment_method_types[0],
+      transactionStatus: retrievedSession.payment_status,
+      transactionId: retrievedSession.id,
       subscription: newSubscription._id,
     });
     await payment.save();
-
-    res.json({ subscription: newSubscription, payment });
+    res.json({ sessionId: session.id, subscription: newSubscription, payment });
   } catch (error) {
-    res.status(500).send('Failed to retrieve subscription');
+    console.error(error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
