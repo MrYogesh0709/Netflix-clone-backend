@@ -9,7 +9,7 @@ const paymentSchema = new Schema<IPayment>({
   transactionStatus: { type: String, required: true },
   transactionId: { type: String, required: true },
   paymentTimestamp: { type: Date, default: Date.now },
-  subscription: { type: Schema.Types.ObjectId, ref: 'Subscription', required: true },
+  subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription', required: true },
 });
 
 export const Payment = model<IPayment>('Payment', paymentSchema);

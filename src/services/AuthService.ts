@@ -45,8 +45,11 @@ export class AuthService {
     };
   }
 
-  async login(data: AuthRequest): Promise<AuthResponse> {
-    const user = await User.findOne({ email: data.email }).populate('profiles');
+  async login(data: IUser) {
+    const user = await User.findOne({ email: data.email })
+      .populate('profiles')
+      .populate({ path: 'subscriptionId', populate: { path: 'planId' } })
+      .populate('paymentIds');
 
     if (!user) throw new ApiError(400, 'Invalid credentials');
 
@@ -58,7 +61,7 @@ export class AuthService {
     const { accessToken, refreshToken } = this.generateTokens(user);
     user.refreshToken = refreshToken;
     await user.save();
-
+    console.log(user);
     return {
       accessToken,
       refreshToken,

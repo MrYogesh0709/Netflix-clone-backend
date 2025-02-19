@@ -8,6 +8,7 @@ import Subscription from '../models/Subscription.model';
 import { logger } from '../utils/logger';
 import { Payment } from '../models/Payment.model';
 import { Types } from 'mongoose';
+import User from '../models/User.model';
 
 const endpointSecret = env.STRIPE_WEBHOOK_ENDPOINT;
 
@@ -62,49 +63,66 @@ class StripeService {
       /**
        * ✅ Subscription Events
        */
-      case 'customer.subscription.created': {
-        const subscription = event.data.object;
-        console.log('📌 Subscription Created:', subscription);
-        // Handle new subscription logic here
-        break;
-      }
       case 'customer.subscription.updated': {
         const stripeSubscription = event.data.object;
-        logger.info('📌 Subscription Updated:', stripeSubscription);
-        const subscription = await Subscription.findOne({ stripeSubscriptionId: stripeSubscription.id });
-        if (!subscription) {
-          console.error('❌ Subscription not found for update.');
-          return;
-        }
-        const newPriceId = stripeSubscription.items.data[0].price.id;
+        logger.info('Subscription Update Event:', stripeSubscription);
 
-        const plan = await Plan.findOne({ stripePriceId: newPriceId });
-        if (!plan) {
-          console.error('❌ No matching Plan found for Stripe Price ID:', newPriceId);
-          return;
+        const subscription = await Subscription.findOne({
+          stripeSubscriptionId: stripeSubscription.id,
+        });
+
+        if (!subscription) {
+          throw new Error(`Subscription not found: ${stripeSubscription.id}`);
         }
+
+        // Get the new plan from the updated subscription
+        const newPriceId = stripeSubscription.items.data[0].price.id;
+        const plan = await Plan.findOne({ stripePriceId: newPriceId });
+
+        if (!plan) {
+          throw new Error(`Plan not found for price: ${newPriceId}`);
+        }
+
+        // Update subscription details
         subscription.status = stripeSubscription.status;
         subscription.planId = plan._id as Types.ObjectId;
         subscription.nextBillingDate = new Date(stripeSubscription.current_period_end * 1000);
-        await subscription.save();
 
-        logger.info('✅ Subscription updated in database.');
+        if (stripeSubscription.cancel_at_period_end) {
+          subscription.status = 'canceled';
+        }
+
+        await subscription.save();
+        logger.info('Subscription updated successfully', { subscriptionId: subscription._id });
         break;
       }
       case 'customer.subscription.deleted': {
         const stripeSubscription = event.data.object;
-        console.log('📌 Subscription Deleted:', stripeSubscription);
+        logger.info('Subscription Deletion Event:', stripeSubscription);
 
-        const subscription = await Subscription.findOne({ stripeSubscriptionId: stripeSubscription.id });
+        const subscription = await Subscription.findOne({
+          stripeSubscriptionId: stripeSubscription.id,
+        });
+
         if (!subscription) {
-          console.error('❌ Subscription not found for deletion.');
-          return;
+          throw new Error(`Subscription not found: ${stripeSubscription.id}`);
         }
 
-        subscription.status = stripeSubscription.status;
+        // Update subscription status
+        subscription.status = 'canceled';
         await subscription.save();
 
-        console.log('✅ Subscription marked as canceled in database.');
+        // Find and update user
+        const user = await User.findById(subscription.userId);
+        if (user) {
+          user.subscriptionId = null;
+          await user.save();
+        }
+
+        logger.info('Subscription canceled successfully', {
+          subscriptionId: subscription._id,
+          userId: subscription.userId,
+        });
         break;
       }
       case 'customer.subscription.trial_will_end': {
@@ -118,15 +136,22 @@ class StripeService {
        */
       case 'invoice.paid': {
         const invoice = event.data.object;
-        logger.info('✅ Invoice Paid:', invoice);
+        logger.info('Processing invoice paid event', { invoiceId: invoice.id });
 
-        const subscription = await Subscription.findOne({ stripeSubscriptionId: invoice.subscription });
-        if (!subscription) {
-          console.error('❌ Subscription not found for invoice.');
-          return;
+        if (!invoice.subscription) {
+          throw new Error('No subscription found on invoice');
         }
 
-        await Payment.create({
+        const subscription = await Subscription.findOne({
+          stripeSubscriptionId: invoice.subscription,
+        });
+
+        if (!subscription) {
+          throw new Error(`Subscription not found for invoice: ${invoice.id}`);
+        }
+
+        // Create payment record
+        const payment = await Payment.create({
           userId: subscription.userId,
           amount: invoice.amount_paid / 100,
           currency: invoice.currency,
@@ -134,64 +159,155 @@ class StripeService {
           transactionStatus: 'success',
           transactionId: invoice.payment_intent || invoice.id,
           paymentTimestamp: new Date(invoice.created * 1000),
-          subscription: subscription._id,
+          subscriptionId: subscription._id,
         });
 
-        // Update Subscription Details
+        // Update user's payment records
+        const user = await User.findById(subscription.userId);
+        if (!user) {
+          throw new Error(`User not found: ${subscription.userId}`);
+        }
+
+        user.paymentIds = user.paymentIds || [];
+        user.paymentIds.push(payment._id as Types.ObjectId);
+        await user.save();
+
+        // Update subscription
         subscription.lastPaymentDate = new Date();
         subscription.nextBillingDate = new Date(invoice.period_end * 1000);
         await subscription.save();
 
-        logger.info('✅ Payment recorded and subscription updated.');
+        logger.info('Successfully processed invoice payment', {
+          userId: user._id,
+          paymentId: payment._id,
+          subscriptionId: subscription._id,
+        });
         break;
       }
 
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object;
+        logger.info('Payment succeeded for renewal:', invoice);
+
+        const subscription = await Subscription.findOne({
+          stripeSubscriptionId: invoice.subscription,
+        });
+
+        if (!subscription) {
+          throw new ApiError(404, 'Subscription not found for successful payment');
+        }
+
+        // Update subscription status and dates
+        subscription.status = 'active';
+        subscription.lastPaymentDate = new Date();
+        subscription.nextBillingDate = new Date(invoice.period_end * 1000);
+        await subscription.save();
+
+        // Create payment record
+        const payment = await Payment.create({
+          userId: subscription.userId,
+          amount: invoice.amount_paid / 100,
+          currency: invoice.currency,
+          paymentMethod: 'card',
+          transactionStatus: 'success',
+          transactionId: invoice.payment_intent,
+          paymentTimestamp: new Date(),
+          subscriptionId: subscription._id,
+        });
+
+        // Update user's payment records
+        const user = await User.findById(subscription.userId);
+        if (user) {
+          user.paymentIds.push(payment._id as Types.ObjectId);
+          await user.save();
+        }
+
+        // return res.json({
+        //     success: true,
+        //     message: 'Renewal payment processed successfully'
+        // });
+        break;
+      }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.error('❌ Invoice Payment Failed:', invoice);
-        // Notify user about failed payment & retry
+        logger.error('Payment failed for invoice:', invoice);
+
+        const subscription = await Subscription.findOne({
+          stripeSubscriptionId: invoice.subscription,
+        });
+
+        if (!subscription) throw new ApiError(400, 'Subscription not found for failed payment');
+
+        // Update subscription status
+        subscription.status = 'past_due';
+        await subscription.save();
+
+        // Update user about payment failure
+        const user = await User.findById(subscription.userId);
+        if (user) {
+          // Here you could trigger email notification to user
+          logger.info('Payment failed for user:', user._id);
+        }
+
+        // return res.json({
+        //   success: false,
+        //   message: 'Payment failed',
+        //   details: {
+        //     attemptCount: invoice.attempt_count,
+        //     nextAttempt: invoice.next_payment_attempt,
+        //   },
+        // });
+
         break;
       }
       case 'invoice.upcoming': {
         const invoice = event.data.object;
-        console.log('🔔 Upcoming Invoice:', invoice);
-        // Notify user about upcoming charge
+        logger.info('Upcoming invoice for renewal:', invoice);
+
+        const subscription = await Subscription.findOne({
+          stripeSubscriptionId: invoice.subscription,
+        });
+
+        if (!subscription) throw new ApiError(400, 'Subscription not found for upcoming renewal');
+
+        // Update next billing date
+        subscription.nextBillingDate = new Date(invoice.next_payment_attempt * 1000);
+        await subscription.save();
+
+        // return res.json({
+        //     success: true,
+        //     message: 'Renewal notification processed'
+        // });
         break;
       }
-      case 'invoice.voided': {
-        const invoice = event.data.object;
-        console.log('❌ Invoice Voided:', invoice);
-        // Handle voided invoices
-        break;
-      }
-      case 'invoice.marked_uncollectible': {
-        const invoice = event.data.object;
-        console.log('⚠️ Invoice Marked Uncollectible:', invoice);
-        // Handle failed collection
-        break;
-      }
+
       /**
        * ✅ Checkout Events
        */
       case 'checkout.session.completed': {
         const session = event.data.object;
-        logger.info('✅ Checkout Session Completed:', session);
-        const { user_id, plan_id } = session.metadata;
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
+        logger.info('Checkout Session Data:', {
+          metadata: session.metadata,
+          customer: session.customer,
+          subscription: session.subscription,
+        });
 
-        if (!user_id || !plan_id || !subscriptionId) {
-          console.error('❌ Missing required metadata for subscription.');
-          return;
+        const { user_id, plan_id } = session.metadata || {};
+        if (!user_id || !plan_id) {
+          throw new Error(`Missing metadata. user_id: ${user_id}, plan_id: ${plan_id}`);
         }
 
-        const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
-        if (!stripeSubscription) {
-          console.error('❌ Stripe subscription not found.');
-          return;
+        // Fetch user first to ensure they exist
+        const user = await User.findById(user_id);
+        if (!user) {
+          throw new Error(`User not found: ${user_id}`);
         }
 
-        await Subscription.create({
+        // Retrieve subscription details
+        const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription as string);
+
+        // Create subscription document
+        const subscription = await Subscription.create({
           userId: user_id,
           planId: plan_id,
           status: stripeSubscription.status,
@@ -199,54 +315,25 @@ class StripeService {
           lastPaymentDate: new Date(),
           nextBillingDate: new Date(stripeSubscription.current_period_end * 1000),
           paymentMethod: session.payment_method_types[0],
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: session.customer,
+          stripeSubscriptionId: session.subscription,
         });
 
-        logger.info('✅ Subscription saved to database.');
+        // Update user with new subscription
+        user.subscriptionId = subscription._id as Types.ObjectId;
+        await user.save();
+
+        logger.info('Successfully processed checkout session', {
+          userId: user_id,
+          subscriptionId: subscription._id,
+        });
+
         break;
       }
       case 'checkout.session.expired': {
         const session = event.data.object;
         console.log('⏳ Checkout Session Expired:', session);
         // Handle expired sessions (maybe notify user)
-        break;
-      }
-
-      /**
-       * ✅ Payment Intent Events (For Custom Payment Handling)
-       */
-      case 'payment_intent.succeeded': {
-        const invoice = event.data.object;
-        logger.info('✅ Payment Intent Succeeded:', invoice);
-        const subscription = await Subscription.findOne({ stripeSubscriptionId: invoice.subscription });
-        if (!subscription) {
-          console.error('❌ Subscription not found for invoice.');
-          return;
-        }
-
-        await Payment.create({
-          userId: subscription.userId,
-          amount: invoice.amount_paid / 100,
-          currency: invoice.currency,
-          paymentMethod: invoice.payment_method_types[0] || 'stripe',
-          transactionStatus: 'success',
-          transactionId: invoice.id,
-          paymentTimestamp: new Date(invoice.created * 1000),
-          subscription: subscription._id,
-        });
-
-        // Update last payment date & next billing date
-        subscription.lastPaymentDate = new Date();
-        subscription.nextBillingDate = new Date(invoice.period_end * 1000);
-        await subscription.save();
-        logger.info('✅ Payment recorded and subscription updated.');
-        break;
-      }
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object;
-        logger.warn('❌ Payment Intent Failed:', paymentIntent);
-        // Notify user about payment failure
         break;
       }
 

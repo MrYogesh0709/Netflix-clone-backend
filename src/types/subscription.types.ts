@@ -6,7 +6,16 @@ export interface ISubscription extends Document {
   nextBillingDate: Date;
   lastPaymentDate: Date | null;
   planId: Types.ObjectId;
-  status: 'active' | 'cancelled' | 'expired';
+  status:
+    | 'active'
+    | 'canceled'
+    | 'incomplete'
+    | 'incomplete_expired'
+    | 'past_due'
+    | 'paused'
+    | 'trialing'
+    | 'unpaid'
+    | 'canceling';
   paymentMethod: 'Stripe';
   stripeSubscriptionId: string;
   stripeCustomerId: string;
@@ -37,5 +46,5 @@ export interface IPayment extends Document {
   transactionStatus: string;
   transactionId: string;
   paymentTimestamp: Date;
-  subscription: Types.ObjectId;
+  subscriptionId: Types.ObjectId;
 }

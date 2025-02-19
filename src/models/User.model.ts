@@ -10,6 +10,8 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true },
     refreshToken: { type: String },
     admin: { type: Boolean, default: false },
+    subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription' },
+    paymentIds: [{ type: Schema.Types.ObjectId, ref: 'Payment' }],
     profiles: {
       type: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
       validate: [

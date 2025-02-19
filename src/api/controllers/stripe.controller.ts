@@ -4,7 +4,7 @@ import StripeService from '../../services/StripeService';
 export default class StipeController {
   static async createCheckoutSession(req: Request, res: Response) {
     const { planId, customerEmail } = req.body;
-    const userId = '67b3494550775796d047c392';
+    const userId = '67b622a9a2abefdbc7cebee9';
     // TODO: use auth middleware req.user
     try {
       const sessionUrl = await StripeService.createCheckoutSession(customerEmail, planId, userId);

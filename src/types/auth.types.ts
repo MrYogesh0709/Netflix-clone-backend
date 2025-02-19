@@ -1,13 +1,15 @@
 import { JwtPayload } from 'jsonwebtoken';
-import { Document, ObjectId } from 'mongoose';
+import { Document, Types } from 'mongoose';
 export interface IUser extends Document {
-  _id: ObjectId;
+  _id: Types.ObjectId;
   username: string;
   email: string;
   password: string;
   refreshToken?: string;
-  profiles: ObjectId[];
+  profiles: Types.ObjectId[];
   admin: boolean;
+  subscriptionId: Types.ObjectId | null;
+  paymentIds: Types.ObjectId[];
 }
 
 export interface CustomJwtPayload extends JwtPayload {
@@ -23,6 +25,6 @@ export interface AuthRequest {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: { id: ObjectId; email: string };
-  profiles?: ObjectId[];
+  user: { id: Types.ObjectId; email: string };
+  profiles?: Types.ObjectId[];
 }

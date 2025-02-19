@@ -1,7 +1,7 @@
 import express from 'express';
 import { validate } from '../middleware/validate';
 import { UserSchemaLogin, UserSchemaRegister } from '../validators/user.schema';
-import { AuthController } from '../controllers/user.controller';
+import { AuthController } from '../controllers/auth.controller';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { authLimiterMiddleware } from '../middleware/rateLimiterMiddleware';
 

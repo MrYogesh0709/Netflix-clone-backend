@@ -36,8 +36,7 @@ export class AuthController {
   });
 
   login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const data = req.body;
-    const { profiles, user, accessToken, refreshToken } = await this.authService.login(data);
+    const { profiles, user, accessToken, refreshToken } = await this.authService.login(req.body);
 
     this.setTokenCookie(res, 'accessToken', accessToken, constants.jwt.expiresIn);
     this.setTokenCookie(res, 'refreshToken', refreshToken, constants.jwt.refreshExpiresIn);
