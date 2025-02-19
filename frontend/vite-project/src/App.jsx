@@ -1,6 +1,7 @@
+/* eslint-disable react/prop-types */
 import CheckoutPage from './Checkout';
-import Home from './Home';
 import MoviePage from './MoviePage';
+import Home from './Home';
 import { BrowserRouter, Routes, Route } from 'react-router';
 const movieId = '67ad058695dc70c7c1bef050';
 const App = () => {

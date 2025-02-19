@@ -1,11 +1,11 @@
-import { Date, Document, ObjectId } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export interface ISubscription extends Document {
-  userId: ObjectId;
+  userId: Types.ObjectId;
   startDate: Date;
   nextBillingDate: Date;
   lastPaymentDate: Date | null;
-  planId: ObjectId;
+  planId: Types.ObjectId;
   status: 'active' | 'cancelled' | 'expired';
   paymentMethod: 'Stripe';
   stripeSubscriptionId: string;
@@ -30,12 +30,12 @@ export interface IPlan extends Document {
 }
 
 export interface IPayment extends Document {
-  userId: ObjectId;
+  userId: Types.ObjectId;
   amount: number;
   currency: string;
   paymentMethod: 'card' | 'paypal' | 'bank_transfer' | 'stripe';
   transactionStatus: string;
   transactionId: string;
   paymentTimestamp: Date;
-  subscription: ObjectId;
+  subscription: Types.ObjectId;
 }

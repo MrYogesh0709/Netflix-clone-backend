@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { authRateLimiter, generalRateLimiter } from '../../config/redisConnect';
+import { authRateLimiter, generalRateLimiter } from '../../config/redis.config';
 import { RateLimiterRes } from 'rate-limiter-flexible';
 
 const setRateLimitHeaders = (res: Response, rateLimiterRes: RateLimiterRes, points: number) => {

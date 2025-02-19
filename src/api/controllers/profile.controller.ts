@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { asyncHandler } from '../../config/asyncHandler';
+import { asyncHandler } from '../../utils/asyncHandler';
 import { Types } from 'mongoose';
 import { ProfileService } from '../../services/ProfileService';
 import { ApiResponse } from '../../utils/ApiResponse';

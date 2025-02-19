@@ -5,19 +5,13 @@ const SubscriptionSchema = new Schema<ISubscription>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     planId: { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
-    status: { type: String, required: true },
+    status: { type: String, enum: ['active', 'canceled', 'trialing', 'past_due'], required: true },
     startDate: { type: Date, required: true },
     lastPaymentDate: { type: Date },
     nextBillingDate: { type: Date, required: true },
     paymentMethod: { type: String },
-    stripeCustomerId: {
-      type: String,
-      unique: true,
-    },
-    stripeSubscriptionId: {
-      type: String,
-      unique: true,
-    },
+    stripeCustomerId: { type: String },
+    stripeSubscriptionId: { type: String },
   },
   { timestamps: true }
 );

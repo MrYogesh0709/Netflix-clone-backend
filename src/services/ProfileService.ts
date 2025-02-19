@@ -1,4 +1,4 @@
-import { redis } from '../config/redisConnect';
+import { redis } from '../config/redis.config';
 import { ApiError } from '../errors/ApiErrors';
 import Profile from '../models/Profile.model';
 import User from '../models/User.model';
@@ -34,18 +34,14 @@ export class ProfileService {
       Profile.countDocuments({ userId }),
     ]);
 
-    if (!userExists) {
-      throw new ApiError(404, 'User not found');
-    }
+    if (!userExists) throw new ApiError(404, 'User not found');
 
     if (profileCount >= constants.MAX_PROFILES) {
       throw new ApiError(400, `Cannot create more than ${constants.MAX_PROFILES} profiles per user`);
     }
 
     const existingProfile = await Profile.findOne({ userId, name: data.name });
-    if (existingProfile) {
-      throw new ApiError(400, 'Profile with this name already exists');
-    }
+    if (existingProfile) throw new ApiError(400, 'Profile with this name already exists');
 
     const result = await Profile.create(data);
     await Promise.all([
@@ -62,15 +58,12 @@ export class ProfileService {
     const cachedProfile = await redis.get(cacheKey);
     if (cachedProfile) {
       const profile = JSON.parse(cachedProfile);
-      if (profile.userId.toString() !== userId) {
-        throw new ApiError(403, 'You are not allowed to see this profile');
-      }
+      if (profile.userId.toString() !== userId) throw new ApiError(403, 'You are not allowed to see this profile');
       return profile;
     }
     const result = await Profile.findOne({ _id: profileId, userId });
-    if (!result) {
-      throw new ApiError(404, 'Profile not Found');
-    }
+    if (!result) throw new ApiError(404, 'Profile not Found');
+
     await redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(result));
     return result;
   }
@@ -79,9 +72,7 @@ export class ProfileService {
     const cacheKey = this.generateUserProfilesKey(userId);
     const cachedProfiles = await redis.get(cacheKey);
 
-    if (cachedProfiles) {
-      return JSON.parse(cachedProfiles);
-    }
+    if (cachedProfiles) return JSON.parse(cachedProfiles);
 
     const profiles = await Profile.find({ userId }).lean();
     await redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(profiles));

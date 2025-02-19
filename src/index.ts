@@ -1,4 +1,4 @@
-import connectToMongoDB from './config/db';
+import connectToMongoDB from './config/mongodb.config';
 import { env } from './utils/env';
 import server from './server';
 

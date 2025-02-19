@@ -1,3 +1,4 @@
+import { IPlan } from '../types/subscription.types';
 import { env } from './env';
 
 export const constants = {
@@ -17,7 +18,7 @@ export const constants = {
   MAX_PROFILES: 6,
 };
 
-export const plans = [
+export const plan: Partial<IPlan>[] = [
   {
     name: 'mobile',
     videoQuality: 'Fair',
@@ -61,3 +62,4 @@ export const plans = [
 ];
 
 export const isDevelopment = env.NODE_ENV === constants.ENVIRONMENT_DEVELOPMENT;
+export const FRONTEND_URL = env.FRONTEND_URL;

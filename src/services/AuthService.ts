@@ -25,9 +25,7 @@ export class AuthService {
     const existingUser = await User.findOne({
       $or: [{ email: data.email }, { username: data.username }],
     });
-    if (existingUser) {
-      throw new ApiError(400, 'User with this email or username already exists');
-    }
+    if (existingUser) throw new ApiError(400, 'User with this email or username already exists');
 
     const hashedPassword = await hashPassword(data.password);
     const newUser = await User.create({
@@ -49,9 +47,8 @@ export class AuthService {
 
   async login(data: AuthRequest): Promise<AuthResponse> {
     const user = await User.findOne({ email: data.email }).populate('profiles');
-    if (!user) {
-      throw new ApiError(400, 'Invalid credentials');
-    }
+
+    if (!user) throw new ApiError(400, 'Invalid credentials');
 
     const isValidPassword = await comparePassword(data.password, user.password);
     if (!isValidPassword) {
@@ -74,9 +71,8 @@ export class AuthService {
     const decoded = jwt.verify(token, constants.jwt.secret) as CustomJwtPayload;
     const user = await User.findOne({ _id: decoded.userId, refreshToken: token });
 
-    if (!user) {
-      throw new Error('Invalid refresh token');
-    }
+    if (!user) throw new Error('Invalid refresh token');
+
     const { accessToken, refreshToken } = this.generateTokens(user);
     user.refreshToken = refreshToken;
     await user.save();

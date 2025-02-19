@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../../services/AuthService';
-import { asyncHandler } from '../../config/asyncHandler';
+import { asyncHandler } from '../../utils/asyncHandler';
 import { constants, isDevelopment } from '../../utils/constant';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { logger } from '../../utils/logger';
