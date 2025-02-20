@@ -10,6 +10,7 @@ export interface IUser extends Document {
   admin: boolean;
   subscriptionId: Types.ObjectId | null;
   paymentIds: Types.ObjectId[];
+  hasSubscription: boolean;
 }
 
 export interface CustomJwtPayload extends JwtPayload {

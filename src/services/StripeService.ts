@@ -10,7 +10,6 @@ import mongoose, { Types } from 'mongoose';
 import User from '../models/User.model';
 import Stripe from 'stripe';
 import { Subscription } from '../models/Subscription.model';
-import { log } from 'winston';
 import { IPayment } from '../types/subscription.types';
 
 const endpointSecret = env.STRIPE_WEBHOOK_ENDPOINT;
@@ -255,6 +254,7 @@ class StripeService {
       const user = await User.findById(existingSubscription.userId).session(session);
       if (user?.subscriptionId?.equals(existingSubscription._id)) {
         user.subscriptionId = null;
+        user.hasSubscription = false;
         await user.save({ session });
       }
 
@@ -345,7 +345,9 @@ class StripeService {
       }
       if (!user.subscriptionId) {
         user.subscriptionId = subscription._id;
-        logger.info('Linking subscription to user', { userId: user._id, subscriptionId: subscription._id });
+        user.hasSubscription = true;
+      } else if (!user.hasSubscription) {
+        user.hasSubscription = true;
       }
       await user.save({ session });
 

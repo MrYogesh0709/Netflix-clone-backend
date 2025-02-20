@@ -11,6 +11,7 @@ const UserSchema = new Schema<IUser>(
     refreshToken: { type: String },
     admin: { type: Boolean, default: false },
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription' },
+    hasSubscription: { type: 'Boolean', default: false },
     paymentIds: [{ type: Schema.Types.ObjectId, ref: 'Payment' }],
     profiles: {
       type: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
