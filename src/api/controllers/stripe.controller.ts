@@ -1,36 +1,24 @@
 import { Request, Response } from 'express';
 import StripeService from '../../services/StripeService';
+import { asyncHandler } from '../../utils/asyncHandler';
 
 export default class StipeController {
-  static async createCheckoutSession(req: Request, res: Response) {
+  static createCheckoutSession = asyncHandler(async (req: Request, res: Response) => {
     const { planId, customerEmail } = req.body;
-    const userId = '67b622a9a2abefdbc7cebee9';
+    const userId = '67b77e9846cac0a9968fe8e9';
     // TODO: use auth middleware req.user
-    try {
-      const sessionUrl = await StripeService.createCheckoutSession(customerEmail, planId, userId);
-      res.redirect(303, sessionUrl);
-    } catch (error) {
-      res.status(400).json({ success: false, error: (error as Error).message });
-    }
-  }
+    const sessionUrl = await StripeService.createCheckoutSession(customerEmail, planId, userId);
+    res.redirect(303, sessionUrl);
+  });
 
-  static async createPortalSession(req: Request, res: Response) {
+  static createPortalSession = asyncHandler(async (req: Request, res: Response) => {
     const { session_id } = req.body;
+    const portalUrl = await StripeService.createPortalSession(session_id);
+    res.redirect(303, portalUrl);
+  });
 
-    try {
-      const portalUrl = await StripeService.createPortalSession(session_id);
-      res.redirect(303, portalUrl);
-    } catch (error) {
-      res.status(400).json({ success: false, error: (error as Error).message });
-    }
-  }
-  static async handleWebhook(req: Request, res: Response) {
-    try {
-      await StripeService.handleWebhook(req);
-      res.sendStatus(200);
-    } catch (error) {
-      console.error('Webhook error:', (error as Error).message);
-      res.sendStatus(400);
-    }
-  }
+  static handleWebhook = asyncHandler(async (req: Request, res: Response) => {
+    await StripeService.handleWebhook(req);
+    res.sendStatus(200);
+  });
 }
